@@ -111,67 +111,69 @@ class StudentsGrades(MDApp):
                 self.layout.remove_widget(label)  # Remove only student labels
             self.student_labels.clear()  # Empty the list
     def edit_student(self, name):
-        print(f"Editing: {name}")
+        print("Editing:", name)
         self.atEdit.clear()
-
-        # Clear previous edit grid if it exists
+        
+        # Remove previous editing grid if it exists
         if self.editGrid:
             self.layout.remove_widget(self.editGrid[0])
             self.editGrid.clear()
 
         self.atEdit.append(name)
         
-        # Get existing details
-        if name in std_marks:
+        if name in std_marks.keys():
+            small_grid = GridLayout(rows=4, cols=2,  # Fix: Increased rows to 4
+                                    size_hint_y=0.5,
+                                    pos_hint={"center_x": 0.5, "center_y": 0.35})
+            self.editGrid.append(small_grid)
+
+            # Store original values
             first_name, last_name = name.split(" ")
             marks = str(std_marks[name])
 
-            # Grid layout for editing
-            small_grid = GridLayout(rows=4, cols=2,  # Increase rows from 3 to 4
-                        size_hint_y=0.5,
-                        pos_hint={"center_x": 0.5, "center_y": 0.35})
-
-            # Labels
+            # Create input fields
+            self.fn_input = TextInput(text=first_name, size_hint_y=0.35)
+            self.ln_input = TextInput(text=last_name, size_hint_y=0.35)
+            self.marks_input = TextInput(text=marks, size_hint_y=0.35, input_filter="int")  # Restrict to numbers
+            
+            # Add widgets to GridLayout
             small_grid.add_widget(MDLabel(text="First Name:"))
-            first_name_input = TextInput(text=first_name)
-            small_grid.add_widget(first_name_input)
-
+            small_grid.add_widget(self.fn_input)
             small_grid.add_widget(MDLabel(text="Last Name:"))
-            last_name_input = TextInput(text=last_name)
-            small_grid.add_widget(last_name_input)
-
+            small_grid.add_widget(self.ln_input)
             small_grid.add_widget(MDLabel(text="Marks:"))
-            marks_input = TextInput(text=marks)
-            small_grid.add_widget(marks_input)
+            small_grid.add_widget(self.marks_input)
 
-            # Save button
-            save_button = MDRaisedButton(text="Save Changes")
-            save_button.bind(on_release=lambda x: self.save_changes(name, first_name_input.text, last_name_input.text, marks_input.text))
+            # Add Save button
+            save_button = MDRaisedButton(text="Save Changes", size_hint_y=0.5)
+            save_button.bind(on_release=lambda x: self.save_changes(name))
             small_grid.add_widget(save_button)
 
+            # Add the small grid to the layout
             self.layout.add_widget(small_grid)
-            self.editGrid.append(small_grid)  # Track the edit grid
-    def save_changes(self, old_name, new_first, new_last, new_marks):
-        try:
-            new_marks = int(new_marks)  # Convert marks to integer
-        except ValueError:
-            print("Invalid marks input. Please enter a number.")
-            return  # Stop if marks are invalid
 
-        new_name = f"{new_first} {new_last}"
+    def save_changes(self, old_name):
+        new_fn = self.fn_input.text.strip()
+        new_ln = self.ln_input.text.strip()
+        new_marks = self.marks_input.text.strip()
 
-        # Remove old entry and update with new values
-        if old_name in std_marks:
+        # Ensure valid input
+        if not new_fn or not new_ln or not new_marks.isdigit():
+            print("Invalid input! All fields must be filled correctly.")
+            return
+
+        new_name = f"{new_fn} {new_ln}"
+        std_marks[new_name] = int(new_marks)  # Update marks dictionary
+
+        # If name changed, remove old entry
+        if new_name != old_name:
             del std_marks[old_name]
-            std_marks[new_name] = new_marks
 
-        print(f"Updated: {new_name} -> {new_marks}")
+        print("Updated Student List:", std_marks)
 
-        # Clear edit grid and refresh the student list
-        if self.editGrid:
-            self.layout.remove_widget(self.editGrid[0])
-            self.editGrid.clear()
-
+        # Refresh UI
+        self.layout.remove_widget(self.editGrid[0])  # Remove edit form
+        self.editGrid.clear()
         self.show_list(None, True)  # Refresh student list
 
     def searched_student(self, search_text):
